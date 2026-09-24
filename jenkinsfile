@@ -2,25 +2,14 @@ pipeline {
     agent any
 
     environment {
-        AWS_DEFAULT_REGION = 'us-east-1'
+        PATH = "/opt/homebrew/bin:${env.PATH}"
     }
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Terraform Init') {
             steps {
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform']
-                ]) {
-                    sh 'terraform init'
-                }
+                sh 'terraform init'
             }
         }
 
@@ -32,23 +21,13 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform']
-                ]) {
-                    sh 'terraform plan -out=tfplan'
-                }
+                sh 'terraform plan'
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                     credentialsId: 'aws-terraform']
-                ]) {
-                    sh 'terraform apply -auto-approve tfplan'
-                }
+                sh 'terraform apply -auto-approve'
             }
         }
     }
