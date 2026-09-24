@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['development', 'staging', 'production'],
+            description: 'Select the Terraform environment to deploy'
+        )
+    }
+
     environment {
         PATH = "/opt/homebrew/bin:${env.PATH}"
     }
@@ -13,6 +21,17 @@ pipeline {
             }
         }
 
+        stage('Terraform Workspace') {
+            steps {
+                sh '''
+                    terraform workspace select ${ENVIRONMENT} || \
+                    terraform workspace new ${ENVIRONMENT}
+
+                    terraform workspace show
+                '''
+            }
+        }
+
         stage('Terraform Validate') {
             steps {
                 sh 'terraform validate'
@@ -21,13 +40,20 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                sh 'terraform plan'
+                sh 'terraform plan -out=tfplan'
+            }
+        }
+
+        stage('Manual Approval') {
+            steps {
+                input message: "Approve Terraform deployment to ${ENVIRONMENT}?",
+                      ok: 'Approve Deployment'
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                sh 'terraform apply -auto-approve'
+                sh 'terraform apply -auto-approve tfplan'
             }
         }
     }
